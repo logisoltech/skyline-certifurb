@@ -76,10 +76,10 @@ export default function Navbar() {
       {/* Main bar */}
       <div className="border-b border-brand-100/80 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 sm:px-6 lg:gap-10">
-          <Link href="/" aria-label="CertFurb – home" className="shrink-0">
+          <Link href="/" aria-label="Certifurb – home" className="shrink-0">
             <Image
               src="/main-logo_1.png"
-              alt="CertFurb – Certified Refurbished"
+              alt="Certifurb – Certified Refurbished"
               width={1058}
               height={238}
               className="h-9 w-auto sm:h-11"

@@ -135,6 +135,43 @@ export function SparkleIcon(props) {
   );
 }
 
+export function MapPinIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z" />
+      <circle cx="12" cy="9.5" r="2.5" />
+    </svg>
+  );
+}
+
+export function ChatIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20.5l1.7-5A8.5 8.5 0 1 1 21 11.5z" />
+    </svg>
+  );
+}
+
+export function HeadsetIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M4 14v-2a8 8 0 0 1 16 0v2" />
+      <rect x="3" y="14" width="4" height="6" rx="1.5" />
+      <rect x="17" y="14" width="4" height="6" rx="1.5" />
+      <path d="M19 20c0 1.1-1.8 2-4 2h-2" />
+    </svg>
+  );
+}
+
+export function ExternalLinkIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M7 17 17 7" />
+      <path d="M8 7h9v9" />
+    </svg>
+  );
+}
+
 export function ShieldCheckIcon(props) {
   return (
     <svg {...base} {...props}>

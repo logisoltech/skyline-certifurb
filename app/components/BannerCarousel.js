@@ -11,11 +11,11 @@ const SLIDES = [
   },
   {
     src: "/main-1.png",
-    alt: "CertFurb Certified Refurbished – Lenovo ThinkPad T490",
+    alt: "Certifurb Certified Refurbished – Lenovo ThinkPad T490",
   },
   {
     src: "/main-2.png",
-    alt: "CertFurb Certified Refurbished – Acer Chromebook Plus",
+    alt: "Certifurb Certified Refurbished – Acer Chromebook Plus",
   },
 ];
 
