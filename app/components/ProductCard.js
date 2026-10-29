@@ -4,6 +4,7 @@ import { formatPrice } from "../data/products";
 
 export default function ProductCard({ product }) {
   const href = `/laptops/${product.slug}`;
+  const outOfStock = product.inStock === false;
 
   return (
     <li className="h-full">
@@ -18,18 +19,29 @@ export default function ProductCard({ product }) {
             src={product.image}
             alt=""
             fill
-            sizes="(min-width: 1024px) 280px, (min-width: 640px) 45vw, 90vw"
-            className="object-contain p-2 transition duration-500 group-hover:scale-105"
+            sizes="(min-width: 1280px) 240px, (min-width: 1024px) 30vw, (min-width: 640px) 45vw, 90vw"
+            className={`object-contain p-2 transition duration-500 group-hover:scale-105 ${
+              outOfStock ? "opacity-60 grayscale-30" : ""
+            }`}
           />
         </Link>
 
         <div className="mt-2 rounded-2xl bg-brand-50/70 p-2">
-          <Link
-            href={href}
-            className="flex h-10 w-full items-center justify-center rounded-full bg-brand-950 text-xs font-bold text-white transition hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
-          >
-            Choose options
-          </Link>
+          {outOfStock ? (
+            <Link
+              href={href}
+              className="flex h-10 w-full items-center justify-center rounded-full border border-zinc-300 bg-white text-xs font-bold text-zinc-500 transition hover:border-brand-600 hover:text-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+            >
+              Out of stock
+            </Link>
+          ) : (
+            <Link
+              href={href}
+              className="flex h-10 w-full items-center justify-center rounded-full bg-brand-950 text-xs font-bold text-white transition hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+            >
+              Choose options
+            </Link>
+          )}
         </div>
 
         <div className="flex flex-1 flex-col px-1.5 pt-3">

@@ -11,7 +11,7 @@ import {
 
 const CONTACT = {
   phone: "+971 6 533 3033",
-  email: "sales@skylinecomputer.ae",
+  email: "sales@certifurb.ae",
 };
 
 function SearchForm({ className = "" }) {

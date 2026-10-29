@@ -7,7 +7,7 @@ const RATING = { score: "4.3", count: 100, checked: "06 Sep 2026" };
 
 const REVIEWS = [
   {
-    quote: "I got an excellent laptop from Skyline Computer.",
+    quote: "I got an excellent laptop from Certifurb.",
     author: "Hany El-Assar",
   },
   {
