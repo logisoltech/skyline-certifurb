@@ -1,22 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import {
-  ALL_PRODUCTS,
-  FEATURED_PRODUCTS,
-  PRICE_RANGES,
-} from "../data/products";
+import { PRICE_RANGES, pickFeatured } from "../data/products";
+import { useCatalog } from "./CatalogProvider";
 import ProductCard from "./ProductCard";
 
-function productsFor(range) {
-  if (range.id === "featured") return FEATURED_PRODUCTS;
-  return ALL_PRODUCTS.filter((p) => p.price >= range.min && p.price <= range.max);
+function productsFor(catalog, range) {
+  if (range.id === "featured") return pickFeatured(catalog);
+  return catalog.filter((p) => p.price >= range.min && p.price <= range.max);
 }
 
 export default function PriceRangeLaptops() {
+  const catalog = useCatalog();
   const [activeId, setActiveId] = useState(PRICE_RANGES[0].id);
   const activeRange = PRICE_RANGES.find((r) => r.id === activeId);
-  const products = productsFor(activeRange);
+  const products = productsFor(catalog, activeRange);
 
   return (
     <section

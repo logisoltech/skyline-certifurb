@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { formatPrice } from "../data/products";
+import { formatPriceFrom } from "../data/products";
+import WishlistButton from "./WishlistButton";
 
 export default function ProductCard({ product }) {
   const href = `/laptops/${product.slug}`;
@@ -8,7 +9,7 @@ export default function ProductCard({ product }) {
 
   return (
     <li className="h-full">
-      <article className="group flex h-full flex-col rounded-3xl border border-zinc-200 bg-white p-3 transition hover:border-brand-300 hover:shadow-[0_18px_40px_-18px_rgba(22,101,52,0.35)]">
+      <article className="group relative flex h-full flex-col rounded-3xl border border-zinc-200 bg-white p-3 transition hover:border-brand-300 hover:shadow-[0_18px_40px_-18px_rgba(22,101,52,0.35)]">
         <Link
           href={href}
           tabIndex={-1}
@@ -25,6 +26,12 @@ export default function ProductCard({ product }) {
             }`}
           />
         </Link>
+
+        <WishlistButton
+          slug={product.slug}
+          title={product.title}
+          className="absolute right-5 top-5 z-10"
+        />
 
         <div className="mt-2 rounded-2xl bg-brand-50/70 p-2">
           {outOfStock ? (
@@ -76,7 +83,7 @@ export default function ProductCard({ product }) {
           </p>
 
           <p className="mt-auto pb-3 pt-5 text-center text-base font-extrabold text-brand-950">
-            {formatPrice(product.price)}
+            {formatPriceFrom(product.price, product.priceMax)}
           </p>
         </div>
       </article>

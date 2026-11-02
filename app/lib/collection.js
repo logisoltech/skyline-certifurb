@@ -1,5 +1,4 @@
 import {
-  ALL_PRODUCTS,
   BRAND_NAMES,
   PRICE_RANGES,
   formatStorage,
@@ -57,13 +56,18 @@ function inUse(product, use) {
   return product.uses.includes(use);
 }
 
-export function getScopeProducts(scope) {
+function pricePoints(product) {
+  if (product.variants?.length) return product.variants.map((v) => v.price);
+  return [product.price, product.priceMax ?? product.price];
+}
+
+export function getScopeProducts(products, scope) {
   const range = PRICE_RANGES.find((r) => r.id === scope.price);
-  return ALL_PRODUCTS.filter(
+  return products.filter(
     (p) =>
       (!scope.brand || p.brand === scope.brand) &&
       (!scope.use || inUse(p, scope.use)) &&
-      (!range || (p.price >= range.min && p.price <= range.max)),
+      (!range || pricePoints(p).some((price) => price >= range.min && price <= range.max)),
   );
 }
 
@@ -73,8 +77,8 @@ export function getScopeProducts(scope) {
 
 export const FACETS = {
   brand: { value: (p) => p.brand, label: (v) => BRAND_NAMES[v] },
-  ram: { value: (p) => p.ram, label: (v) => `${v}GB` },
-  ssd: { value: (p) => p.ssd, label: (v) => formatStorage(v) },
+  ram: { values: (p) => p.rams ?? [p.ram], label: (v) => `${v}GB` },
+  ssd: { values: (p) => p.ssds ?? [p.ssd], label: (v) => formatStorage(v) },
   generation: { value: (p) => p.generation, label: (v) => `${ordinal(v)} Gen` },
   screen: { value: (p) => p.screen, label: (v) => `${v} Inch` },
   processor: { value: (p) => p.processor, label: (v) => v },
@@ -102,27 +106,32 @@ export function countActiveFilters(filters) {
   );
 }
 
+function valuesOf(product, key) {
+  const facet = FACETS[key];
+  if (facet.values) return (facet.values(product) ?? []).filter((v) => v !== null && v !== undefined);
+  const value = facet.value(product);
+  return value === null || value === undefined ? [] : [value];
+}
+
 // Does `product` pass every active filter? `skip` ignores one group, which is
 // how per-option counts are calculated.
 export function matches(product, filters, skip = null) {
   for (const key of Object.keys(FACETS)) {
     if (key === skip || filters[key].length === 0) continue;
-    if (!filters[key].includes(FACETS[key].value(product))) return false;
+    const values = valuesOf(product, key);
+    if (!filters[key].some((wanted) => values.includes(wanted))) return false;
   }
   if (filters.price && skip !== "price") {
-    if (product.price < filters.price[0] || product.price > filters.price[1]) {
-      return false;
-    }
+    const prices = pricePoints(product);
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    if (max < filters.price[0] || min > filters.price[1]) return false;
   }
   return true;
 }
 
 export function facetOptions(products, key) {
-  const values = [
-    ...new Set(
-      products.map(FACETS[key].value).filter((v) => v !== null && v !== undefined),
-    ),
-  ];
+  const values = [...new Set(products.flatMap((p) => valuesOf(p, key)))];
   if (key === "availability") return values.sort((a) => (a === "in" ? -1 : 1));
   if (key === "brand") {
     return values.sort((a, b) => BRAND_NAMES[a].localeCompare(BRAND_NAMES[b]));
@@ -133,13 +142,13 @@ export function facetOptions(products, key) {
 
 export function facetCount(products, filters, key, value) {
   return products.filter(
-    (p) => matches(p, filters, key) && FACETS[key].value(p) === value,
+    (p) => matches(p, filters, key) && valuesOf(p, key).includes(value),
   ).length;
 }
 
 export function priceBounds(products) {
   if (products.length === 0) return [0, 0];
-  const prices = products.map((p) => p.price);
+  const prices = products.flatMap(pricePoints);
   return [
     Math.floor(Math.min(...prices) / 50) * 50,
     Math.ceil(Math.max(...prices) / 50) * 50,
@@ -159,6 +168,6 @@ export const SORT_OPTIONS = [
 export function sortProducts(products, sort) {
   const list = [...products]; // stable; "best" keeps catalogue order
   if (sort === "price-asc") list.sort((a, b) => a.price - b.price);
-  if (sort === "price-desc") list.sort((a, b) => b.price - a.price);
+  if (sort === "price-desc") list.sort((a, b) => (b.priceMax ?? b.price) - (a.priceMax ?? a.price));
   return list;
 }

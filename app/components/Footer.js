@@ -22,6 +22,7 @@ const BUDGET_LINKS = [
 ];
 
 const SUPPORT_LINKS = [
+  { label: "Track your order", href: "/account/track" },
   { label: "Contact us", href: "/contact" },
   { label: "Visit our store", href: "/store" },
   { label: "Delivery, payments & FAQs", href: "/faqs" },

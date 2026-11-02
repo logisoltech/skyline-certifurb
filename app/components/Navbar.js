@@ -1,17 +1,17 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
-  CartIcon,
   ChevronDownIcon,
   MailIcon,
   PhoneIcon,
   SearchIcon,
-  UserIcon,
 } from "./Icons";
+import NavAccountLink from "./NavAccountLink";
+import NavCartLink from "./NavCartLink";
 
 const CONTACT = {
   phone: "+971 6 533 3033",
-  email: "sales@certifurb.ae",
+  email: "sales@certifurb.com",
 };
 
 function SearchForm({ className = "" }) {
@@ -95,37 +95,9 @@ export default function Navbar() {
             aria-label="Account"
             className="ml-auto flex items-center gap-5 sm:gap-7"
           >
-            <Link
-              href="/account"
-              className="group flex items-center gap-2 text-zinc-800"
-            >
-              <UserIcon width={26} height={26} className="transition group-hover:text-brand-700" />
-              <span className="hidden text-left text-xs leading-tight sm:block">
-                <span className="block text-zinc-500">Hello</span>
-                <span className="block font-semibold group-hover:text-brand-700">
-                  Sign In
-                </span>
-              </span>
-            </Link>
+            <NavAccountLink />
 
-            <Link
-              href="/cart"
-              className="group flex items-center gap-2 text-zinc-800"
-              aria-label="Cart, 0 items"
-            >
-              <span className="relative">
-                <CartIcon width={26} height={26} className="transition group-hover:text-brand-700" />
-                <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-600 px-1 text-[11px] font-semibold text-white sm:hidden">
-                  0
-                </span>
-              </span>
-              <span className="hidden items-center gap-1.5 text-xs font-semibold group-hover:text-brand-700 sm:flex">
-                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-600 px-1 text-[11px] text-white">
-                  0
-                </span>
-                Cart
-              </span>
-            </Link>
+            <NavCartLink />
           </nav>
         </div>
 

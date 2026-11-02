@@ -1,4 +1,5 @@
 // Placeholder image for every product until real photos are available.
+// (Also the default image for products created in the CMS.)
 export const PLACEHOLDER_IMAGE = "/dell.png";
 
 export const BRAND_NAMES = {
@@ -23,14 +24,29 @@ export const formatStorage = (gb) =>
 
 export const formatPrice = (value) => `AED ${value.toLocaleString("en-US")}`;
 
+export const formatPriceFrom = (min, max) =>
+  max != null && max > min ? `From ${formatPrice(min)}` : formatPrice(min);
+
+function rangeLabel(values, format) {
+  const nums = [...new Set(values.filter((v) => v !== null && v !== undefined))].sort((a, b) => a - b);
+  if (nums.length === 0) return null;
+  if (nums.length === 1) return format(nums[0]);
+  return `${format(nums[0])}–${format(nums[nums.length - 1])}`;
+}
+
 // Builds the spec chips shown on cards from the structured fields so the card
 // and the collection filters can never disagree.
-function buildProduct(base) {
+export function buildProduct(base) {
+  const variants = Array.isArray(base.variants) ? base.variants : [];
+  const rams = base.rams ?? (variants.length ? [...new Set(variants.map((v) => v.ram))] : [base.ram]);
+  const ssds = base.ssds ?? (variants.length ? [...new Set(variants.map((v) => v.ssd))] : [base.ssd]);
+  const images = base.images?.length ? base.images : [base.image || PLACEHOLDER_IMAGE];
+
   const specs = [
     base.processor,
     base.generation ? `${ordinal(base.generation)} Gen` : null,
-    `${base.ram}GB`,
-    formatStorage(base.ssd),
+    rangeLabel(rams, (n) => `${n}GB`),
+    rangeLabel(ssds, formatStorage),
     `${base.screen} inch`,
     base.touch ? "Touch" : null,
     base.twoInOne ? "2-in-1" : null,
@@ -45,12 +61,18 @@ function buildProduct(base) {
     generation: null,
     uses: [],
     ...base,
+    rams,
+    ssds,
+    images,
+    image: images[0],
     specs,
   };
 }
 
-// The catalogue, in "best selling" order. PLACEHOLDER DATA: replace with the
-// real inventory when it's available.
+// The SEED catalogue, in "best selling" order. PLACEHOLDER DATA. It is only
+// used to fill the CMS store the first time it's created (see
+// app/lib/cms/seed.js); after that the CMS is the source of truth and the
+// storefront reads the live catalogue from app/lib/catalog.js.
 export const ALL_PRODUCTS = [
   buildProduct({
     slug: "lenovo-thinkpad-t14-gen-2-ryzen-5-pro",
@@ -63,6 +85,7 @@ export const ALL_PRODUCTS = [
     screen: 14,
     condition: "Excellent",
     price: 1200,
+    featured: true,
     uses: ["business"],
   }),
   buildProduct({
@@ -77,6 +100,7 @@ export const ALL_PRODUCTS = [
     screen: 14,
     condition: "Excellent",
     price: 999,
+    featured: true,
     uses: ["business", "student"],
   }),
   buildProduct({
@@ -92,6 +116,7 @@ export const ALL_PRODUCTS = [
     touch: true,
     condition: "Good",
     price: 939,
+    featured: true,
     uses: ["business"],
   }),
   buildProduct({
@@ -108,6 +133,7 @@ export const ALL_PRODUCTS = [
     twoInOne: true,
     condition: "Excellent",
     price: 939,
+    featured: true,
     uses: ["business"],
   }),
   buildProduct({
@@ -227,7 +253,7 @@ export const ALL_PRODUCTS = [
 ];
 
 // The four products shown in "Featured renewed laptops".
-const FEATURED_SLUGS = [
+export const FEATURED_SLUGS = [
   "lenovo-thinkpad-t14-gen-2-ryzen-5-pro",
   "hp-elitebook-840-g7-core-i5",
   "dell-latitude-5320-core-i5-touch",
@@ -246,3 +272,11 @@ export const PRICE_RANGES = [
   { id: "1500-2499", label: "AED 1500–2499", min: 1500, max: 2499 },
   { id: "2500-plus", label: "AED 2500+", min: 2500, max: Infinity },
 ];
+
+// The "Featured" laptops for the home page: ones flagged in the CMS first,
+// topped up with other in-stock laptops so the section is never half empty.
+export function pickFeatured(products, count = 4) {
+  const flagged = products.filter((p) => p.featured && p.inStock);
+  const rest = products.filter((p) => !p.featured && p.inStock);
+  return [...flagged, ...rest].slice(0, count);
+}

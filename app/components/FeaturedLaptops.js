@@ -1,9 +1,12 @@
 import Link from "next/link";
-import { FEATURED_PRODUCTS } from "../data/products";
+import { pickFeatured } from "../data/products";
+import { getCatalog } from "../lib/catalog";
 import { ArrowRightIcon } from "./Icons";
 import ProductCard from "./ProductCard";
 
-export default function FeaturedLaptops() {
+export default async function FeaturedLaptops() {
+  const featured = pickFeatured(await getCatalog());
+
   return (
     <section
       aria-labelledby="featured-laptops"
@@ -35,7 +38,7 @@ export default function FeaturedLaptops() {
         </div>
 
         <ul className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {FEATURED_PRODUCTS.map((product) => (
+          {featured.map((product) => (
             <ProductCard key={product.slug} product={product} />
           ))}
         </ul>

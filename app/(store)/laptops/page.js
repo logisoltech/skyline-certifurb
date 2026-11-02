@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import CollectionView from "../components/CollectionView";
-import { parseScope, scopeKey } from "../lib/collection";
+import CollectionView from "../../components/CollectionView";
+import { parseScope, scopeKey } from "../../lib/collection";
 
 export const metadata = {
   title: "Renewed Laptops | Certifurb",

@@ -11,13 +11,15 @@ import {
   scopeTitle,
   sortProducts,
 } from "../lib/collection";
+import { useCatalog } from "./CatalogProvider";
 import CollectionFilters from "./CollectionFilters";
 import { ChevronDownIcon, ChevronRightIcon } from "./Icons";
 import ProductCard from "./ProductCard";
 
 export default function CollectionView({ scope }) {
   const title = scopeTitle(scope);
-  const scopeProducts = useMemo(() => getScopeProducts(scope), [scope]);
+  const catalog = useCatalog();
+  const scopeProducts = useMemo(() => getScopeProducts(catalog, scope), [catalog, scope]);
 
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [sort, setSort] = useState("best");
