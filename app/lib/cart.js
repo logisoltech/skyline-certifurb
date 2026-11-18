@@ -1,11 +1,9 @@
 // ---------------------------------------------------------------------------
 // Client-side cart store.
 //
-// DEMO ONLY: the cart lives in this browser's localStorage (works for guests
-// and signed-in users alike). Only { slug, variantId, qty } is stored; names
-// and prices are always read from the catalogue so they can never go stale.
-// When a real backend exists, re-implement this file and the pages won't
-// need to change.
+// The cart lives in localStorage (works for guests and signed-in users).
+// Only { slug, variantId, qty } is stored; names and prices come from the
+// live catalogue. Checkout persists the order via createOrderAction.
 // ---------------------------------------------------------------------------
 
 import { useMemo, useSyncExternalStore } from "react";

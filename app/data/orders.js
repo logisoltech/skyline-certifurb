@@ -1,19 +1,17 @@
 import { ALL_PRODUCTS } from "./products";
 
-// The stages an order moves through, in order.
+// Aligned with CMS order statuses (app/lib/cms/constants.js).
 export const ORDER_STEPS = [
   { id: "placed", label: "Order placed" },
-  { id: "processing", label: "Inspected & prepared" },
-  { id: "shipped", label: "Dispatched" },
-  { id: "out-for-delivery", label: "Out for delivery" },
+  { id: "preparing", label: "Inspected & prepared" },
+  { id: "dispatched", label: "Dispatched" },
   { id: "delivered", label: "Delivered" },
 ];
 
 export const ORDER_STATUS = {
   placed: { label: "Order placed", tone: "info" },
-  processing: { label: "Being prepared", tone: "info" },
-  shipped: { label: "Dispatched", tone: "progress" },
-  "out-for-delivery": { label: "Out for delivery", tone: "progress" },
+  preparing: { label: "Being prepared", tone: "info" },
+  dispatched: { label: "Dispatched", tone: "progress" },
   delivered: { label: "Delivered", tone: "done" },
   cancelled: { label: "Cancelled", tone: "muted" },
 };
@@ -40,16 +38,25 @@ const dateTimeFmt = new Intl.DateTimeFormat("en-GB", {
 export const formatDate = (iso) => dateFmt.format(new Date(iso));
 export const formatDateTime = (iso) => dateTimeFmt.format(new Date(iso));
 
-// Resolves an order's items against the catalogue and totals them up.
+// Resolves an order's items against the catalogue (or stored line fields).
 export function describeOrder(order) {
   const lines = order.items
-    .map(({ slug, qty }) => {
-      const product = ALL_PRODUCTS.find((p) => p.slug === slug);
-      return product ? { product, qty, lineTotal: product.price * qty } : null;
+    .map((item) => {
+      const catalog = ALL_PRODUCTS.find((p) => p.slug === item.slug);
+      const price = item.price ?? catalog?.price ?? 0;
+      const product = catalog
+        ? { ...catalog, title: item.title || catalog.title, price }
+        : {
+            slug: item.slug,
+            title: item.title || item.slug,
+            image: "/dell.png",
+            price,
+          };
+      return { product, qty: item.qty, lineTotal: price * item.qty };
     })
     .filter(Boolean);
   const subtotal = lines.reduce((sum, l) => sum + l.lineTotal, 0);
-  return { lines, subtotal, delivery: 0, total: subtotal };
+  return { lines, subtotal, delivery: 0, total: order.total ?? subtotal };
 }
 
 // ---------------------------------------------------------------------------

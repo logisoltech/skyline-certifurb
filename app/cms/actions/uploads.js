@@ -1,16 +1,12 @@
 "use server";
 
 import crypto from "node:crypto";
-import { promises as fs } from "node:fs";
-import path from "node:path";
 import { authorize } from "../../lib/cms/auth";
+import { createAdminClient } from "../../lib/supabase/admin";
 
-// ("use server" files may only export async functions, so this stays private.)
-const UPLOAD_DIR = path.join(process.cwd(), ".data", "uploads");
 const MAX_BYTES = 2 * 1024 * 1024;
+const BUCKET = "product-images";
 
-// Decide the type from the file's own first bytes, never from the
-// client-supplied name or MIME type.
 function sniff(bytes) {
   if (bytes.length > 12) {
     if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return "png";
@@ -39,7 +35,14 @@ export async function uploadImageAction(formData) {
   if (!type) return { ok: false, error: "Only PNG, JPG or WebP images are allowed." };
 
   const name = `${crypto.randomBytes(8).toString("hex")}.${type}`;
-  await fs.mkdir(UPLOAD_DIR, { recursive: true });
-  await fs.writeFile(path.join(UPLOAD_DIR, name), bytes);
-  return { ok: true, path: `/uploads/${name}` };
+  const contentType = type === "jpg" ? "image/jpeg" : `image/${type}`;
+  const admin = createAdminClient();
+  const { error } = await admin.storage.from(BUCKET).upload(name, bytes, {
+    contentType,
+    upsert: false,
+  });
+  if (error) return { ok: false, error: error.message };
+
+  const { data } = admin.storage.from(BUCKET).getPublicUrl(name);
+  return { ok: true, path: data.publicUrl };
 }

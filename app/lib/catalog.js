@@ -1,10 +1,9 @@
-// The live catalogue the storefront reads (server side). It comes from the CMS
-// store, is cached, and is refreshed instantly when the CMS calls
-// updateTag("catalog") after a product change.
+// The live catalogue the storefront reads (server side). Cached and refreshed
+// when the CMS calls updateTag("catalog") after a product change.
 
 import { cacheLife, cacheTag } from "next/cache";
 import { buildProduct } from "../data/products";
-import { readStore } from "./cms/db";
+import { listPublishedProducts } from "./cms/db";
 import { migrateProduct, variantLabel } from "./cms/product-model";
 
 function toStorefrontVariant(raw, product) {
@@ -22,7 +21,6 @@ function toStorefrontVariant(raw, product) {
   };
 }
 
-// Raw CMS record -> the shape the storefront components expect.
 export function toStorefrontProduct(raw) {
   const product = migrateProduct(raw);
   const variants = (product.variants ?? []).map((v) => toStorefrontVariant(v, product));
@@ -53,12 +51,11 @@ export function toStorefrontProduct(raw) {
   });
 }
 
-// Published products only; drafts never reach the storefront.
 export async function getCatalog() {
   "use cache";
   cacheTag("catalog");
   cacheLife("hours");
 
-  const { products } = await readStore();
-  return products.filter((p) => p.status === "published").map(toStorefrontProduct);
+  const products = await listPublishedProducts();
+  return products.map(toStorefrontProduct);
 }

@@ -18,7 +18,7 @@ const TONES = {
 };
 
 export function StatusBadge({ status }) {
-  const meta = ORDER_STATUS[status];
+  const meta = ORDER_STATUS[status] ?? { label: status, tone: "info" };
   return (
     <span
       className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold ring-1 ${TONES[meta.tone]}`}
@@ -112,14 +112,20 @@ export function OrderTotals({ order }) {
 }
 
 export function OrderAddress({ order }) {
-  const a = order.address;
+  const a = order.address ?? {
+    name: order.customerName || "",
+    phone: order.customerPhone || "",
+    line: "",
+    area: "",
+    emirate: order.emirate || "",
+  };
   return (
     <address className="text-xs not-italic leading-relaxed text-zinc-600">
       <span className="font-bold text-zinc-800">{a.name}</span>
       <br />
-      {a.line}, {a.area}
+      {[a.line, a.area].filter(Boolean).join(", ") || "Address on file"}
       <br />
-      {a.emirate}, UAE
+      {a.emirate ? `${a.emirate}, UAE` : "UAE"}
       <br />
       {a.phone}
     </address>
@@ -128,10 +134,11 @@ export function OrderAddress({ order }) {
 
 // Vertical timeline of the stages an order has reached / still has to reach.
 export function OrderTimeline({ order }) {
+  const events = order.events ?? [];
   if (order.status === "cancelled") {
     return (
       <ol className="space-y-5">
-        {order.events.map((event) => (
+        {events.map((event) => (
           <li key={event.step} className="flex gap-3">
             <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-zinc-600">
               <CheckIcon width={13} height={13} strokeWidth={3} />
@@ -149,8 +156,8 @@ export function OrderTimeline({ order }) {
     );
   }
 
-  const reached = new Map(order.events.map((e) => [e.step, e]));
-  const currentIndex = ORDER_STEPS.findIndex((s) => s.id === order.status);
+  const reached = new Map(events.map((e) => [e.step, e]));
+  const currentIndex = Math.max(0, ORDER_STEPS.findIndex((s) => s.id === order.status));
 
   return (
     <ol>
@@ -210,8 +217,8 @@ export function OrderTimeline({ order }) {
 
 export function EstimatedDelivery({ order }) {
   if (order.status === "delivered") {
-    const delivered = order.events.find((e) => e.step === "delivered");
-    return <>Delivered {formatDate(delivered.at)}</>;
+    const delivered = (order.events ?? []).find((e) => e.step === "delivered");
+    return <>Delivered {formatDate(delivered?.at || order.placedAt)}</>;
   }
   if (order.status === "cancelled" || !order.estimatedDelivery) return null;
   return <>Estimated delivery {formatDate(order.estimatedDelivery)}</>;

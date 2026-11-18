@@ -61,36 +61,36 @@ async function Order({ params }) {
           </Card>
 
           <Card title="Customer">
-            {customer ? (
-              <dl className="grid gap-2 text-sm">
-                <div className="flex justify-between gap-4">
-                  <dt className="text-zinc-500">Name</dt>
-                  <dd>
+            <dl className="grid gap-2 text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="text-zinc-500">Name</dt>
+                <dd>
+                  {customer ? (
                     <Link href={`/cms/customers/${customer.id}`} className="font-semibold hover:text-brand-700">
                       {customer.name}
                     </Link>
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-zinc-500">Email</dt>
-                  <dd>{customer.email}</dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-zinc-500">Phone</dt>
-                  <dd>{customer.phone}</dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-zinc-500">Emirate</dt>
-                  <dd>{order.emirate}</dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-zinc-500">Payment</dt>
-                  <dd>{order.payment}</dd>
-                </div>
-              </dl>
-            ) : (
-              <p className="text-sm text-zinc-500">Customer record missing.</p>
-            )}
+                  ) : (
+                    <span className="font-semibold">{order.customerName || "—"}</span>
+                  )}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-zinc-500">Email</dt>
+                <dd>{customer?.email || order.customerEmail || "—"}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-zinc-500">Phone</dt>
+                <dd>{customer?.phone || order.customerPhone || "—"}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-zinc-500">Emirate</dt>
+                <dd>{order.emirate || "—"}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-zinc-500">Payment</dt>
+                <dd>{order.payment}</dd>
+              </div>
+            </dl>
           </Card>
         </div>
 

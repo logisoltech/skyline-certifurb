@@ -1,16 +1,19 @@
 "use server";
 
-import { authorize, hashPassword, passwordProblem } from "../../lib/cms/auth";
+import { authorize, passwordProblem } from "../../lib/cms/auth";
 import { ROLE_IDS } from "../../lib/cms/constants";
-import { logActivity, mutateStore, newId } from "../../lib/cms/db";
+import {
+  deleteStaffProfile,
+  logActivity,
+  readStore,
+  updateStaffProfile,
+} from "../../lib/cms/db";
+import { createAdminClient } from "../../lib/supabase/admin";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 const activeOwners = (users) =>
   users.filter((u) => u.role === "owner" && u.status === "active").length;
-
-// ---------------------------------------------------------------------------
-// Owner creates a user directly (with a temporary password they hand over).
 
 export async function createUserAction(_prev, formData) {
   const auth = await authorize("users:manage");
@@ -29,83 +32,92 @@ export async function createUserAction(_prev, formData) {
   if (problem) fieldErrors.password = problem;
   if (Object.keys(fieldErrors).length > 0) return { fieldErrors };
 
-  const passwordHash = await hashPassword(password);
-  const outcome = await mutateStore((data) => {
-    if (data.users.some((u) => u.email === email)) return { duplicate: true };
-    data.users.push({
-      id: newId("usr"),
-      name,
+  const admin = createAdminClient();
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: {
+      full_name: name,
+      role,
+      status: "active",
+    },
+  });
+  if (error) {
+    if (/already/i.test(error.message)) {
+      return { fieldErrors: { email: "A user with this email already exists." } };
+    }
+    return { error: error.message };
+  }
+
+  await admin
+    .from("profiles")
+    .update({
+      full_name: name,
       email,
       role,
       status: "active",
-      passwordHash,
-      sessionVersion: 0,
-      createdAt: new Date().toISOString(),
-      lastLoginAt: null,
-    });
-    logActivity(data, auth.user, "added a CMS user", `${name} (${role})`);
-    return { ok: true };
-  });
+    })
+    .eq("id", data.user.id);
 
-  if (outcome.duplicate) return { fieldErrors: { email: "A user with this email already exists." } };
+  await logActivity(auth.user, "added a CMS user", `${name} (${role})`);
   return { ok: true, message: `${name} can now sign in with the password you set.` };
 }
-
-// ---------------------------------------------------------------------------
-// Approve / change role / enable / disable / delete.
 
 export async function updateUserAction(id, change) {
   const auth = await authorize("users:manage");
   if (!auth.ok) return auth;
 
-  return mutateStore((data) => {
-    const target = data.users.find((u) => u.id === String(id));
-    if (!target) return { ok: false, error: "That user no longer exists." };
+  const { users } = await readStore();
+  const target = users.find((u) => u.id === String(id));
+  if (!target) return { ok: false, error: "That user no longer exists." };
 
-    const isSelf = target.id === auth.user.id;
-    const beforeOwners = activeOwners(data.users);
+  const isSelf = target.id === auth.user.id;
+  const beforeOwners = activeOwners(users);
 
-    if (change.action === "delete") {
-      if (isSelf) return { ok: false, error: "You can't delete your own account here." };
-      if (target.role === "owner" && target.status === "active" && beforeOwners <= 1) {
-        return { ok: false, error: "You can't remove the last owner." };
-      }
-      data.users = data.users.filter((u) => u.id !== target.id);
-      logActivity(data, auth.user, "removed a CMS user", target.email);
-      return { ok: true };
+  if (change.action === "delete") {
+    if (isSelf) return { ok: false, error: "You can't delete your own account here." };
+    if (target.role === "owner" && target.status === "active" && beforeOwners <= 1) {
+      return { ok: false, error: "You can't remove the last owner." };
     }
+    await deleteStaffProfile(target.id);
+    await logActivity(auth.user, "removed a CMS user", target.email);
+    return { ok: true };
+  }
 
-    if (change.action === "approve") {
-      if (!ROLE_IDS.includes(change.role)) return { ok: false, error: "Choose a role." };
-      target.status = "active";
-      target.role = change.role;
-      logActivity(data, auth.user, "approved a CMS user", `${target.email} as ${change.role}`);
-      return { ok: true };
+  if (change.action === "approve") {
+    if (!ROLE_IDS.includes(change.role)) return { ok: false, error: "Choose a role." };
+    await updateStaffProfile(target.id, { status: "active", role: change.role });
+    await logActivity(auth.user, "approved a CMS user", `${target.email} as ${change.role}`);
+    return { ok: true };
+  }
+
+  if (change.action === "role") {
+    if (!ROLE_IDS.includes(change.role)) return { ok: false, error: "Choose a role." };
+    if (isSelf) return { ok: false, error: "You can't change your own role." };
+    if (target.role === "owner" && change.role !== "owner" && target.status === "active" && beforeOwners <= 1) {
+      return { ok: false, error: "There must be at least one owner." };
     }
+    await updateStaffProfile(target.id, { role: change.role });
+    await logActivity(auth.user, "changed a role", `${target.email} → ${change.role}`);
+    return { ok: true };
+  }
 
-    if (change.action === "role") {
-      if (!ROLE_IDS.includes(change.role)) return { ok: false, error: "Choose a role." };
-      if (isSelf) return { ok: false, error: "You can't change your own role." };
-      if (target.role === "owner" && change.role !== "owner" && target.status === "active" && beforeOwners <= 1) {
-        return { ok: false, error: "There must be at least one owner." };
-      }
-      target.role = change.role;
-      logActivity(data, auth.user, "changed a role", `${target.email} → ${change.role}`);
-      return { ok: true };
+  if (change.action === "disable" || change.action === "enable") {
+    if (isSelf) return { ok: false, error: "You can't disable your own account." };
+    if (change.action === "disable" && target.role === "owner" && target.status === "active" && beforeOwners <= 1) {
+      return { ok: false, error: "You can't disable the last owner." };
     }
-
-    if (change.action === "disable" || change.action === "enable") {
-      if (isSelf) return { ok: false, error: "You can't disable your own account." };
-      if (change.action === "disable" && target.role === "owner" && target.status === "active" && beforeOwners <= 1) {
-        return { ok: false, error: "You can't disable the last owner." };
-      }
-      target.status = change.action === "disable" ? "disabled" : "active";
-      // Kills any session the user currently has.
-      target.sessionVersion = (target.sessionVersion ?? 0) + 1;
-      logActivity(data, auth.user, `${change.action}d a CMS user`, target.email);
-      return { ok: true };
+    await updateStaffProfile(target.id, {
+      status: change.action === "disable" ? "disabled" : "active",
+    });
+    if (change.action === "disable") {
+      const admin = createAdminClient();
+      await admin.auth.admin.signOut(target.id, "global");
     }
+    await logActivity(auth.user, `${change.action}d a CMS user`, target.email);
+    return { ok: true };
+  }
 
-    return { ok: false, error: "Unknown action." };
-  });
+  return { ok: false, error: "Unknown action." };
 }

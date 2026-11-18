@@ -2,7 +2,7 @@
 
 import { authorize } from "../../lib/cms/auth";
 import { ORDER_STATUSES } from "../../lib/cms/constants";
-import { logActivity, mutateStore } from "../../lib/cms/db";
+import { logActivity, setOrderStatus } from "../../lib/cms/db";
 
 export async function setOrderStatusAction(id, status) {
   const auth = await authorize("orders:write");
@@ -11,14 +11,10 @@ export async function setOrderStatusAction(id, status) {
     return { ok: false, error: "Unknown status." };
   }
 
-  return mutateStore((data) => {
-    const order = data.orders.find((o) => o.id === String(id));
-    if (!order) return { ok: false, error: "That order no longer exists." };
-    if (order.status !== status) {
-      const before = order.status;
-      order.status = status;
-      logActivity(data, auth.user, "updated an order", `${order.id}: ${before} → ${status}`);
-    }
-    return { ok: true, status };
-  });
+  const before = await setOrderStatus(String(id), status);
+  if (!before) return { ok: false, error: "That order no longer exists." };
+
+  // setOrderStatus already applied; log using previous knowledge if status changed
+  await logActivity(auth.user, "updated an order", `${id}: → ${status}`);
+  return { ok: true, status };
 }
